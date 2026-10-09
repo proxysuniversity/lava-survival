@@ -1,7 +1,7 @@
 {
-  "name": "space-raiders-server",
+  "name": "lava-survival",
   "version": "1.0.0",
-  "description": "Space Raiders multiplayer WebSocket server",
+  "description": "Lava Survival game (lavasurvival.io)",
   "main": "server.js",
   "scripts": {
     "start": "node server.js"

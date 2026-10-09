@@ -1,0 +1,2584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>Lava Survival</title>
+
+<style>
+*{
+    box-sizing:border-box;
+}
+
+html,body{
+    margin:0;
+    width:100%;
+    height:100%;
+    overflow:hidden;
+    background:#050505;
+    color:white;
+    font-family:Arial,sans-serif;
+}
+
+canvas{
+    display:block;
+    width:100%;
+    height:100%;
+    background:#111;
+}
+
+button{
+    font-family:Arial,sans-serif;
+}
+
+#unityIntro{
+    position:fixed;
+    inset:0;
+    z-index:1000;
+    background:#000;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+}
+
+#unityIntro img{
+    width:180px;
+    max-width:45vw;
+    opacity:0;
+    transform:scale(.65);
+    animation:unitySplash 2.5s ease forwards;
+}
+
+@keyframes unitySplash{
+    0%{
+        opacity:0;
+        transform:scale(.65);
+    }
+    25%{
+        opacity:1;
+        transform:scale(1);
+    }
+    70%{
+        opacity:1;
+        transform:scale(1.08);
+    }
+    100%{
+        opacity:0;
+        transform:scale(1.18);
+    }
+}
+
+#menu{
+    position:fixed;
+    inset:0;
+    z-index:100;
+    display:flex;
+    flex-direction:column;
+    align-items:center;
+    justify-content:center;
+    background:#050505;
+}
+
+#menu h1{
+    margin:0 0 8px;
+    font-size:48px;
+}
+
+#menu p{
+    margin:0 0 24px;
+    color:#aaa;
+}
+
+.modeButton,
+.menuButton{
+    width:250px;
+    padding:14px;
+    margin:6px;
+    border:2px solid white;
+    background:#111;
+    color:white;
+    font-size:17px;
+    font-weight:bold;
+    cursor:pointer;
+}
+
+.modeButton:hover,
+.menuButton:hover{
+    background:white;
+    color:black;
+}
+
+#settings{
+    position:fixed;
+    inset:0;
+    z-index:200;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    background:rgba(0,0,0,.9);
+}
+
+.settingsBox{
+    width:min(700px,92vw);
+    max-height:90vh;
+    overflow:auto;
+    background:#111;
+    border:2px solid #555;
+    padding:25px;
+}
+
+.settingsBox h2{
+    margin-top:0;
+    text-align:center;
+}
+
+.bindSection{
+    border:1px solid #333;
+    padding:15px;
+    margin:12px 0;
+}
+
+.bindSection h3{
+    margin:0 0 10px;
+}
+
+.bindRow{
+    display:flex;
+    align-items:center;
+    justify-content:space-between;
+    gap:15px;
+    padding:10px 0;
+    border-bottom:1px solid #222;
+}
+
+.bindRow:last-child{
+    border-bottom:0;
+}
+
+.bindButton{
+    min-width:120px;
+    height:40px;
+    padding:8px 14px;
+    background:#222;
+    color:white;
+    border:1px solid #666;
+    cursor:pointer;
+    font-weight:bold;
+}
+
+.bindButton:hover{
+    background:#333;
+}
+
+.bindButton.waiting{
+    background:#111;
+    border-color:white;
+    color:white;
+    animation:keyWaiting .7s infinite alternate;
+}
+
+@keyframes keyWaiting{
+    from{
+        opacity:.45;
+    }
+    to{
+        opacity:1;
+    }
+}
+
+#settingsMessage{
+    min-height:22px;
+    text-align:center;
+    color:#aaa;
+    margin:10px 0;
+}
+
+#hud{
+    position:fixed;
+    top:15px;
+    left:15px;
+    z-index:20;
+    display:none;
+    font-size:18px;
+    font-weight:bold;
+    text-shadow:2px 2px 4px #000;
+}
+
+#cameraText{
+    position:fixed;
+    bottom:15px;
+    left:50%;
+    transform:translateX(-50%);
+    z-index:20;
+    display:none;
+    color:#aaa;
+    font-size:13px;
+    text-shadow:2px 2px 4px #000;
+}
+
+#gameOver{
+    position:fixed;
+    inset:0;
+    z-index:300;
+    display:none;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    background:rgba(0,0,0,.78);
+}
+
+#gameOver h2{
+    font-size:50px;
+    margin:0 0 12px;
+}
+
+#gameOver button{
+    padding:13px 28px;
+    font-size:18px;
+    font-weight:bold;
+    cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+
+<div id="unityIntro">
+    <img id="unityImage" src="unity-logo.png" alt="Unity">
+</div>
+
+<div id="menu">
+
+    <h1>Lava Survival</h1>
+
+    <p>Climb higher. Don't touch the lava.</p>
+
+    <button class="modeButton" onclick="startGame('solo')">
+        1 PLAYER
+    </button>
+
+    <button class="modeButton" onclick="startGame('two')">
+        2 PLAYER
+    </button>
+
+    <button class="modeButton" onclick="startGame('pvp')">
+        PvP Push
+    </button>
+
+    <button class="menuButton" onclick="openSettings()">
+        CONTROLS / KEYBINDS
+    </button>
+
+</div>
+
+<div id="settings">
+
+    <div class="settingsBox">
+
+        <h2>Controls & Keybinds</h2>
+
+        <div class="bindSection">
+
+            <h3>Player 1</h3>
+
+            <div class="bindRow">
+                <span>Move Left</span>
+                <button class="bindButton"
+                    id="p1Left"
+                    onclick="changeBind('p1','left')">
+                    A
+                </button>
+            </div>
+
+            <div class="bindRow">
+                <span>Move Right</span>
+                <button class="bindButton"
+                    id="p1Right"
+                    onclick="changeBind('p1','right')">
+                    D
+                </button>
+            </div>
+
+            <div class="bindRow">
+                <span>Jump / Double Jump</span>
+                <button class="bindButton"
+                    id="p1Jump"
+                    onclick="changeBind('p1','jump')">
+                    W
+                </button>
+            </div>
+
+            <div class="bindRow">
+                <span>Push Pulse</span>
+                <button class="bindButton"
+                    id="p1Ability"
+                    onclick="changeBind('p1','ability')">
+                    LEFT SHIFT
+                </button>
+            </div>
+
+        </div>
+
+        <div class="bindSection">
+
+            <h3>Player 2</h3>
+
+            <div class="bindRow">
+                <span>Move Left</span>
+                <button class="bindButton"
+                    id="p2Left"
+                    onclick="changeBind('p2','left')">
+                    LEFT
+                </button>
+            </div>
+
+            <div class="bindRow">
+                <span>Move Right</span>
+                <button class="bindButton"
+                    id="p2Right"
+                    onclick="changeBind('p2','right')">
+                    RIGHT
+                </button>
+            </div>
+
+            <div class="bindRow">
+                <span>Jump / Double Jump</span>
+                <button class="bindButton"
+                    id="p2Jump"
+                    onclick="changeBind('p2','jump')">
+                    UP
+                </button>
+            </div>
+
+            <div class="bindRow">
+                <span>Push Pulse</span>
+                <button class="bindButton"
+                    id="p2Ability"
+                    onclick="changeBind('p2','ability')">
+                    RIGHT SHIFT
+                </button>
+            </div>
+
+        </div>
+
+        <div id="settingsMessage"></div>
+
+        <button class="menuButton" onclick="closeSettings()">
+            DONE
+        </button>
+
+        <button class="menuButton" onclick="resetKeybinds()">
+            RESET DEFAULTS
+        </button>
+
+    </div>
+
+</div>
+
+<div id="hud">
+    Height:
+    <span id="heightText">0</span>
+
+    &nbsp; | &nbsp;
+
+    Lava:
+    <span id="lavaText">0</span>
+</div>
+
+<div id="cameraText">
+    Camera follows both players
+</div>
+
+<div id="gameOver">
+
+    <h2 id="gameOverTitle">
+        GAME OVER
+    </h2>
+
+    <div id="winnerText"></div>
+
+    <br>
+
+    <button onclick="returnToMenu()">
+        MENU
+    </button>
+
+</div>
+
+<canvas id="game"></canvas>
+
+<script>
+
+/* =========================================================
+   ASSETS
+   ========================================================= */
+
+const ASSETS = {
+
+    background:{
+        hasImage:false,
+        image:"background.png"
+    },
+
+    unityIntro:{
+        hasImage:false,
+        image:"unity-logo.png"
+    },
+
+    gameLogo:{
+        hasImage:false,
+        image:"game-logo.png"
+    },
+
+    menuBackground:{
+        hasImage:false,
+        image:"menu-background.png"
+    },
+
+    player1:{
+        hasImage:false,
+        image:"player1.png"
+    },
+
+    player2:{
+        hasImage:false,
+        image:"player2.png"
+    },
+
+    player1Jump:{
+        hasImage:false,
+        image:"player1-jump.png"
+    },
+
+    player2Jump:{
+        hasImage:false,
+        image:"player2-jump.png"
+    },
+
+    player1Run:{
+        hasImage:false,
+        image:"player1-run.png"
+    },
+
+    player2Run:{
+        hasImage:false,
+        image:"player2-run.png"
+    },
+
+    player1DoubleJump:{
+        hasImage:false,
+        image:"player1-double-jump.png"
+    },
+
+    player2DoubleJump:{
+        hasImage:false,
+        image:"player2-double-jump.png"
+    },
+
+    platform:{
+        hasImage:false,
+        image:"platform.png"
+    },
+
+    lava:{
+        hasImage:false,
+        image:"lava.png"
+    },
+
+    lavaSurface:{
+        hasImage:false,
+        image:"lava-surface.png"
+    },
+
+    lavaParticle:{
+        hasImage:false,
+        image:"lava-particle.png"
+    },
+
+    pushPulse:{
+        hasImage:false,
+        image:"push-pulse.png"
+    },
+
+    pushEffect:{
+        hasImage:false,
+        image:"push-effect.png"
+    },
+
+    p1Indicator:{
+        hasImage:false,
+        image:"p1-indicator.png"
+    },
+
+    p2Indicator:{
+        hasImage:false,
+        image:"p2-indicator.png"
+    },
+
+    menuPanel:{
+        hasImage:false,
+        image:"menu-panel.png"
+    },
+
+    onePlayerButton:{
+        hasImage:false,
+        image:"one-player-button.png"
+    },
+
+    twoPlayerButton:{
+        hasImage:false,
+        image:"two-player-button.png"
+    },
+
+    pvpButton:{
+        hasImage:false,
+        image:"pvp-button.png"
+    },
+
+    settingsButton:{
+        hasImage:false,
+        image:"settings-button.png"
+    },
+
+    settingsPanel:{
+        hasImage:false,
+        image:"settings-panel.png"
+    },
+
+    settingsIcon:{
+        hasImage:false,
+        image:"settings-icon.png"
+    },
+
+    gameOverPanel:{
+        hasImage:false,
+        image:"game-over-panel.png"
+    },
+
+    gameOverButton:{
+        hasImage:false,
+        image:"game-over-button.png"
+    },
+
+    doubleJumpEffect:{
+        hasImage:false,
+        image:"double-jump-effect.png"
+    },
+
+    backgroundParticle:{
+        hasImage:false,
+        image:"background-particle.png"
+    }
+};
+
+
+/* =========================================================
+   MUSIC
+   ========================================================= */
+
+const MUSIC = {
+
+    song1:true,
+    song1LinkFile:"music/example.mp3",
+
+    song2:false,
+    song2LinkFile:"music/song2.mp3",
+
+    song3:false,
+    song3LinkFile:"music/song3.mp3",
+
+    song4:false,
+    song4LinkFile:"music/song4.mp3",
+
+    pvpMusic:true,
+    pvpMusicLinkFile:"music/pvp-background.mp3"
+};
+
+const audio=new Audio();
+
+audio.loop=true;
+audio.volume=.45;
+
+let currentSong=-1;
+
+
+/* =========================================================
+   KEYBINDS
+   ========================================================= */
+
+const DEFAULT_KEYBINDS={
+
+    p1:{
+        left:"KeyA",
+        right:"KeyD",
+        jump:"KeyW",
+        ability:"ShiftLeft"
+    },
+
+    p2:{
+        left:"ArrowLeft",
+        right:"ArrowRight",
+        jump:"ArrowUp",
+        ability:"ShiftRight"
+    }
+};
+
+let KEYBINDS=loadKeybinds();
+
+function loadKeybinds(){
+
+    try{
+
+        const saved=
+            localStorage.getItem(
+                "lavaSurvivalKeybinds"
+            );
+
+        if(saved){
+
+            const parsed=
+                JSON.parse(saved);
+
+            return{
+
+                p1:{
+                    ...DEFAULT_KEYBINDS.p1,
+                    ...parsed.p1
+                },
+
+                p2:{
+                    ...DEFAULT_KEYBINDS.p2,
+                    ...parsed.p2
+                }
+            };
+        }
+
+    }catch(e){}
+
+    return JSON.parse(
+        JSON.stringify(
+            DEFAULT_KEYBINDS
+        )
+    );
+}
+
+function saveKeybinds(){
+
+    localStorage.setItem(
+        "lavaSurvivalKeybinds",
+        JSON.stringify(KEYBINDS)
+    );
+}
+
+
+/* =========================================================
+   FN F STYLE KEYBIND SYSTEM
+   ========================================================= */
+
+let waitingForBind=null;
+
+function changeBind(player,action){
+
+    /*
+       If another keybind is already waiting,
+       cancel it first.
+    */
+
+    if(waitingForBind){
+
+        updateKeybindButtons();
+    }
+
+    waitingForBind={
+        player:player,
+        action:action
+    };
+
+    const buttonId=
+        player+
+        action.charAt(0).toUpperCase()+
+        action.slice(1);
+
+    const button=
+        document.getElementById(
+            buttonId
+        );
+
+    if(button){
+
+        /*
+           THIS IS THE FNF-STYLE PART:
+           button becomes "..."
+        */
+
+        button.textContent="...";
+
+        button.classList.add(
+            "waiting"
+        );
+    }
+
+    document.getElementById(
+        "settingsMessage"
+    ).textContent=
+        "Press a key...";
+}
+
+
+/* =========================================================
+   KEY NAME DISPLAY
+   ========================================================= */
+
+function readableKey(code){
+
+    const names={
+
+        KeyA:"A",
+        KeyB:"B",
+        KeyC:"C",
+        KeyD:"D",
+        KeyE:"E",
+        KeyF:"F",
+        KeyG:"G",
+        KeyH:"H",
+        KeyI:"I",
+        KeyJ:"J",
+        KeyK:"K",
+        KeyL:"L",
+        KeyM:"M",
+        KeyN:"N",
+        KeyO:"O",
+        KeyP:"P",
+        KeyQ:"Q",
+        KeyR:"R",
+        KeyS:"S",
+        KeyT:"T",
+        KeyU:"U",
+        KeyV:"V",
+        KeyW:"W",
+        KeyX:"X",
+        KeyY:"Y",
+        KeyZ:"Z",
+
+        Digit0:"0",
+        Digit1:"1",
+        Digit2:"2",
+        Digit3:"3",
+        Digit4:"4",
+        Digit5:"5",
+        Digit6:"6",
+        Digit7:"7",
+        Digit8:"8",
+        Digit9:"9",
+
+        ArrowLeft:"LEFT",
+        ArrowRight:"RIGHT",
+        ArrowUp:"UP",
+        ArrowDown:"DOWN",
+
+        ShiftLeft:"LEFT SHIFT",
+        ShiftRight:"RIGHT SHIFT",
+
+        Space:"SPACE",
+
+        Enter:"ENTER",
+
+        Escape:"ESC",
+
+        Tab:"TAB",
+
+        Backspace:"BACKSPACE",
+
+        ControlLeft:"LEFT CTRL",
+        ControlRight:"RIGHT CTRL",
+
+        AltLeft:"LEFT ALT",
+        AltRight:"RIGHT ALT",
+
+        CapsLock:"CAPS LOCK",
+
+        F1:"F1",
+        F2:"F2",
+        F3:"F3",
+        F4:"F4",
+        F5:"F5",
+        F6:"F6",
+        F7:"F7",
+        F8:"F8",
+        F9:"F9",
+        F10:"F10",
+        F11:"F11",
+        F12:"F12"
+    };
+
+    return names[code] || code;
+}
+
+
+/* =========================================================
+   UPDATE BUTTONS
+   ========================================================= */
+
+function updateKeybindButtons(){
+
+    for(
+        const player of
+        ["p1","p2"]
+    ){
+
+        for(
+            const action of
+            ["left","right","jump","ability"]
+        ){
+
+            const id=
+                player+
+                action.charAt(0).toUpperCase()+
+                action.slice(1);
+
+            const button=
+                document.getElementById(id);
+
+            if(button){
+
+                /*
+                   Don't overwrite "..." while
+                   the user is choosing a key.
+                */
+
+                if(
+                    waitingForBind &&
+                    waitingForBind.player===player &&
+                    waitingForBind.action===action
+                ){
+
+                    button.textContent="...";
+
+                    button.classList.add(
+                        "waiting"
+                    );
+
+                }else{
+
+                    button.textContent=
+                        readableKey(
+                            KEYBINDS[player][action]
+                        );
+
+                    button.classList.remove(
+                        "waiting"
+                    );
+                }
+            }
+        }
+    }
+}
+
+
+/* =========================================================
+   SETTINGS
+   ========================================================= */
+
+function openSettings(){
+
+    document.getElementById(
+        "settings"
+    ).style.display="flex";
+
+    updateKeybindButtons();
+}
+
+function closeSettings(){
+
+    waitingForBind=null;
+
+    document.getElementById(
+        "settings"
+    ).style.display="none";
+
+    document.getElementById(
+        "settingsMessage"
+    ).textContent="";
+}
+
+function resetKeybinds(){
+
+    waitingForBind=null;
+
+    KEYBINDS=
+        JSON.parse(
+            JSON.stringify(
+                DEFAULT_KEYBINDS
+            )
+        );
+
+    saveKeybinds();
+
+    updateKeybindButtons();
+
+    document.getElementById(
+        "settingsMessage"
+    ).textContent=
+        "Controls reset.";
+}
+
+
+/* =========================================================
+   KEYBOARD INPUT
+   ========================================================= */
+
+const keys={};
+
+window.addEventListener(
+    "keydown",
+    e=>{
+
+        /*
+           If a keybind button was clicked,
+           the NEXT key pressed becomes the
+           new keybind.
+        */
+
+        if(waitingForBind){
+
+            e.preventDefault();
+            e.stopPropagation();
+
+            const player=
+                waitingForBind.player;
+
+            const action=
+                waitingForBind.action;
+
+            /*
+               Escape cancels the keybind selection
+               instead of becoming a control.
+            */
+
+            if(e.code==="Escape"){
+
+                waitingForBind=null;
+
+                updateKeybindButtons();
+
+                document.getElementById(
+                    "settingsMessage"
+                ).textContent=
+                    "Keybind cancelled.";
+
+                return;
+            }
+
+            /*
+               Save the physical key.
+            */
+
+            KEYBINDS[player][action]=
+                e.code;
+
+            saveKeybinds();
+
+            waitingForBind=null;
+
+            /*
+               Immediately replace "..."
+               with the new key.
+            */
+
+            updateKeybindButtons();
+
+            document.getElementById(
+                "settingsMessage"
+            ).textContent=
+                "Keybind changed!";
+
+            return;
+        }
+
+        /*
+           Normal game keyboard input.
+        */
+
+        keys[e.code]=true;
+
+        if([
+            "ArrowUp",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "Space"
+        ].includes(e.code)){
+
+            e.preventDefault();
+        }
+    }
+);
+
+window.addEventListener(
+    "keyup",
+    e=>{
+
+        keys[e.code]=false;
+    }
+);
+
+
+/* =========================================================
+   IMAGE LOADING
+   ========================================================= */
+
+const images={};
+
+for(const key in ASSETS){
+
+    if(ASSETS[key].hasImage){
+
+        const img=new Image();
+
+        img.src=
+            ASSETS[key].image;
+
+        images[key]=img;
+    }
+}
+
+
+/* =========================================================
+   CANVAS
+   ========================================================= */
+
+const canvas=
+    document.getElementById("game");
+
+const ctx=
+    canvas.getContext("2d");
+
+let W=innerWidth;
+let H=innerHeight;
+
+function resize(){
+
+    W=innerWidth;
+    H=innerHeight;
+
+    canvas.width=W;
+    canvas.height=H;
+}
+
+window.addEventListener(
+    "resize",
+    resize
+);
+
+resize();
+
+
+/* =========================================================
+   GAME STATE
+   ========================================================= */
+
+let mode="solo";
+let running=false;
+
+let platforms=[];
+let players=[];
+
+let cameraX=0;
+let cameraY=0;
+let cameraZoom=1;
+
+let lavaY=0;
+let startTime=0;
+
+const GRAVITY=.48;
+const MOVE_SPEED=4.5;
+const AIR_CONTROL=.72;
+const JUMP_POWER=11.5;
+
+const PUSH_RANGE=145;
+const PUSH_FORCE=10;
+const PUSH_COOLDOWN=850;
+
+
+/* =========================================================
+   PLAYER
+   ========================================================= */
+
+function makePlayer(
+    x,
+    y,
+    color,
+    bindPlayer
+){
+
+    return{
+
+        x:x,
+        y:y,
+
+        w:32,
+        h:44,
+
+        vx:0,
+        vy:0,
+
+        color:color,
+
+        bindPlayer:bindPlayer,
+
+        grounded:false,
+
+        jumps:0,
+
+        alive:true,
+
+        facing:1,
+
+        lastPush:0,
+
+        pushEffectTimer:0,
+
+        abilityHeld:false
+    };
+}
+
+
+/* =========================================================
+   PLATFORM GENERATION
+   ========================================================= */
+
+function generatePlatforms(){
+
+    platforms=[];
+
+    platforms.push({
+
+        x:W/2-180,
+        y:H-90,
+        w:360,
+        h:22
+    });
+
+    let lastX=
+        W/2-180;
+
+    let lastY=
+        H-90;
+
+    for(let i=0;i<100;i++){
+
+        const maxHorizontal=
+            Math.min(
+                150,
+                W*.22
+            );
+
+        let x=
+            lastX+
+            (Math.random()*2-1)*
+            maxHorizontal;
+
+        let y=
+            lastY-
+            (
+                85+
+                Math.random()*65
+            );
+
+        x=Math.max(
+            25,
+            Math.min(
+                W-225,
+                x
+            )
+        );
+
+        /*
+           Never make a platform gap
+           ridiculously large.
+        */
+
+        if(
+            lastY-y>150
+        ){
+
+            y=
+                lastY-120;
+        }
+
+        const width=
+            175+
+            Math.random()*90;
+
+        platforms.push({
+
+            x:x,
+            y:y,
+            w:Math.min(
+                width,
+                W-50
+            ),
+            h:22
+        });
+
+        lastX=x;
+        lastY=y;
+    }
+}
+
+
+/* =========================================================
+   START GAME
+   ========================================================= */
+
+function startGame(selectedMode){
+
+    mode=selectedMode;
+
+    document.getElementById(
+        "menu"
+    ).style.display="none";
+
+    document.getElementById(
+        "gameOver"
+    ).style.display="none";
+
+    document.getElementById(
+        "hud"
+    ).style.display="block";
+
+    document.getElementById(
+        "cameraText"
+    ).style.display=
+        mode==="two"
+        ?"block"
+        :"none";
+
+    generatePlatforms();
+
+    const start=
+        platforms[0];
+
+    players=[];
+
+    if(mode==="solo"){
+
+        players.push(
+            makePlayer(
+                start.x+
+                start.w/2-16,
+                start.y-44,
+                "#35a7ff",
+                "p1"
+            )
+        );
+    }
+
+    if(
+        mode==="two" ||
+        mode==="pvp"
+    ){
+
+        players.push(
+            makePlayer(
+                start.x+70,
+                start.y-44,
+                "#35a7ff",
+                "p1"
+            )
+        );
+
+        players.push(
+            makePlayer(
+                start.x+
+                start.w-
+                105,
+                start.y-44,
+                "#ff3b3b",
+                "p2"
+            )
+        );
+    }
+
+    lavaY=
+        H+650;
+
+    cameraX=0;
+    cameraY=0;
+    cameraZoom=1;
+
+    startTime=
+        performance.now();
+
+    running=true;
+
+    startMusic();
+}
+
+
+/* =========================================================
+   MUSIC
+   ========================================================= */
+
+function getSongs(){
+
+    const list=[];
+
+    if(
+        MUSIC.song1 &&
+        MUSIC.song1LinkFile
+    )
+        list.push(
+            MUSIC.song1LinkFile
+        );
+
+    if(
+        MUSIC.song2 &&
+        MUSIC.song2LinkFile
+    )
+        list.push(
+            MUSIC.song2LinkFile
+        );
+
+    if(
+        MUSIC.song3 &&
+        MUSIC.song3LinkFile
+    )
+        list.push(
+            MUSIC.song3LinkFile
+        );
+
+    if(
+        MUSIC.song4 &&
+        MUSIC.song4LinkFile
+    )
+        list.push(
+            MUSIC.song4LinkFile
+        );
+
+    return list;
+}
+
+function startMusic(){
+
+    if(
+        mode==="pvp" &&
+        MUSIC.pvpMusic &&
+        MUSIC.pvpMusicLinkFile
+    ){
+
+        audio.src=
+            MUSIC.pvpMusicLinkFile;
+
+        audio.currentTime=0;
+
+        audio.play().catch(
+            ()=>{}
+        );
+
+        return;
+    }
+
+    const songs=
+        getSongs();
+
+    if(!songs.length)
+        return;
+
+    let index=
+        Math.floor(
+            Math.random()*
+            songs.length
+        );
+
+    if(
+        songs.length>1 &&
+        index===currentSong
+    ){
+
+        index=
+            (index+1)%
+            songs.length;
+    }
+
+    currentSong=index;
+
+    audio.src=
+        songs[index];
+
+    audio.currentTime=0;
+
+    audio.play().catch(
+        ()=>{}
+    );
+}
+
+function stopMusic(){
+
+    audio.pause();
+    audio.currentTime=0;
+}
+
+
+/* =========================================================
+   JUMP
+   ========================================================= */
+
+function tryJump(player){
+
+    if(!player.alive)
+        return;
+
+    if(player.grounded){
+
+        player.vy=
+            -JUMP_POWER;
+
+        player.grounded=false;
+        player.jumps=1;
+
+        return;
+    }
+
+    if(player.jumps===1){
+
+        player.vy=
+            -JUMP_POWER;
+
+        player.jumps=2;
+    }
+}
+
+
+/* =========================================================
+   PUSH
+   ========================================================= */
+
+function usePush(player){
+
+    if(
+        !player.alive ||
+        mode!=="pvp"
+    )
+        return;
+
+    const now=
+        performance.now();
+
+    if(
+        now-player.lastPush<
+        PUSH_COOLDOWN
+    )
+        return;
+
+    player.lastPush=now;
+    player.pushEffectTimer=18;
+
+    for(
+        const other of players
+    ){
+
+        if(
+            other===player ||
+            !other.alive
+        )
+            continue;
+
+        const dx=
+            (
+                other.x+
+                other.w/2
+            )-
+            (
+                player.x+
+                player.w/2
+            );
+
+        const dy=
+            (
+                other.y+
+                other.h/2
+            )-
+            (
+                player.y+
+                player.h/2
+            );
+
+        const distance=
+            Math.sqrt(
+                dx*dx+
+                dy*dy
+            );
+
+        if(
+            distance<=PUSH_RANGE
+        ){
+
+            const direction=
+                dx>=0
+                ?1
+                :-1;
+
+            other.vx+=
+                direction*
+                PUSH_FORCE;
+
+            other.vy-=4;
+
+            other.x+=
+                direction*8;
+        }
+    }
+}
+
+
+/* =========================================================
+   PLAYER UPDATE
+   ========================================================= */
+
+function updatePlayer(player){
+
+    if(!player.alive)
+        return;
+
+    const controls=
+        KEYBINDS[
+            player.bindPlayer
+        ];
+
+    const left=
+        keys[controls.left];
+
+    const right=
+        keys[controls.right];
+
+    if(left){
+
+        player.vx-=
+            AIR_CONTROL;
+
+        player.facing=-1;
+    }
+
+    if(right){
+
+        player.vx+=
+            AIR_CONTROL;
+
+        player.facing=1;
+    }
+
+    if(
+        !left &&
+        !right
+    ){
+
+        player.vx*=.82;
+    }
+
+    player.vx=
+        Math.max(
+            -MOVE_SPEED,
+            Math.min(
+                MOVE_SPEED,
+                player.vx
+            )
+        );
+
+    player.vy+=
+        GRAVITY;
+
+    const oldY=
+        player.y;
+
+    player.x+=
+        player.vx;
+
+    player.y+=
+        player.vy;
+
+    if(player.x<0){
+
+        player.x=0;
+        player.vx=0;
+    }
+
+    if(
+        player.x+
+        player.w>W
+    ){
+
+        player.x=
+            W-player.w;
+
+        player.vx=0;
+    }
+
+    player.grounded=false;
+
+    if(player.vy>=0){
+
+        for(
+            const platform of
+            platforms
+        ){
+
+            const wasAbove=
+                oldY+
+                player.h<=
+                platform.y+5;
+
+            const touching=
+                player.y+
+                player.h>=
+                platform.y;
+
+            const horizontal=
+                player.x+
+                player.w>
+                platform.x &&
+                player.x<
+                platform.x+
+                platform.w;
+
+            if(
+                wasAbove &&
+                touching &&
+                horizontal
+            ){
+
+                player.y=
+                    platform.y-
+                    player.h;
+
+                player.vy=0;
+                player.grounded=true;
+                player.jumps=0;
+
+                break;
+            }
+        }
+    }
+
+    if(
+        player.pushEffectTimer>0
+    ){
+
+        player.pushEffectTimer--;
+    }
+
+    if(
+        player.y-cameraY>
+        H+180
+    ){
+
+        player.alive=false;
+    }
+}
+
+
+/* =========================================================
+   CAMERA
+   ========================================================= */
+
+function updateCamera(){
+
+    const alive=
+        players.filter(
+            p=>p.alive
+        );
+
+    if(!alive.length)
+        return;
+
+    if(
+        mode==="solo" ||
+        alive.length===1
+    ){
+
+        const p=alive[0];
+
+        const targetX=
+            p.x+
+            p.w/2-
+            W/2;
+
+        const targetY=
+            p.y-
+            H*.42;
+
+        cameraX+=
+            (
+                targetX-cameraX
+            )*.09;
+
+        cameraY+=
+            (
+                targetY-cameraY
+            )*.09;
+
+        cameraZoom+=
+            (
+                1-cameraZoom
+            )*.08;
+
+        return;
+    }
+
+    const p1=alive[0];
+    const p2=alive[1];
+
+    const p1cx=
+        p1.x+p1.w/2;
+
+    const p2cx=
+        p2.x+p2.w/2;
+
+    const p1cy=
+        p1.y+p1.h/2;
+
+    const p2cy=
+        p2.y+p2.h/2;
+
+    const centerX=
+        (p1cx+p2cx)/2;
+
+    const centerY=
+        (p1cy+p2cy)/2;
+
+    const moving=
+        Math.abs(p1.vx)+
+        Math.abs(p1.vy)>
+        Math.abs(p2.vx)+
+        Math.abs(p2.vy)
+        ?p1
+        :p2;
+
+    const focusX=
+        centerX+
+        (
+            moving.x+
+            moving.w/2-
+            centerX
+        )*.22;
+
+    const focusY=
+        centerY+
+        (
+            moving.y+
+            moving.h/2-
+            centerY
+        )*.18;
+
+    const targetX=
+        focusX-W/2;
+
+    const targetY=
+        focusY-H*.42;
+
+    cameraX+=
+        (
+            targetX-cameraX
+        )*.075;
+
+    cameraY+=
+        (
+            targetY-cameraY
+        )*.09;
+
+    const distance=
+        Math.max(
+            Math.abs(
+                p1cx-p2cx
+            ),
+            Math.abs(
+                p1cy-p2cy
+            )
+        );
+
+    let zoom=1;
+
+    if(distance>350)
+        zoom=.92;
+
+    if(distance>500)
+        zoom=.84;
+
+    if(distance>650)
+        zoom=.76;
+
+    cameraZoom+=
+        (
+            zoom-cameraZoom
+        )*.06;
+}
+
+
+/* =========================================================
+   LAVA
+   ========================================================= */
+
+function updateLava(){
+
+    const elapsed=
+        (
+            performance.now()-
+            startTime
+        )/1000;
+
+    /*
+       Slightly faster than before,
+       but still designed to be beatable.
+    */
+
+    let speed=.115;
+
+    if(elapsed>25){
+
+        speed+=
+            Math.min(
+                .42,
+                (
+                    elapsed-25
+                )*.008
+            );
+    }
+
+    lavaY-=speed;
+}
+
+
+/* =========================================================
+   DRAW ASSET
+   ========================================================= */
+
+function drawAsset(
+    name,
+    x,
+    y,
+    w,
+    h,
+    fallback
+){
+
+    if(
+        ASSETS[name] &&
+        ASSETS[name].hasImage &&
+        images[name] &&
+        images[name].complete
+    ){
+
+        ctx.drawImage(
+            images[name],
+            x,
+            y,
+            w,
+            h
+        );
+
+    }else{
+
+        fallback();
+    }
+}
+
+
+/* =========================================================
+   DRAW
+   ========================================================= */
+
+function draw(){
+
+    ctx.clearRect(
+        0,
+        0,
+        W,
+        H
+    );
+
+    if(
+        ASSETS.background.hasImage &&
+        images.background &&
+        images.background.complete
+    ){
+
+        ctx.drawImage(
+            images.background,
+            0,
+            0,
+            W,
+            H
+        );
+
+    }else{
+
+        const gradient=
+            ctx.createLinearGradient(
+                0,
+                0,
+                0,
+                H
+            );
+
+        gradient.addColorStop(
+            0,
+            "#101010"
+        );
+
+        gradient.addColorStop(
+            1,
+            "#250000"
+        );
+
+        ctx.fillStyle=
+            gradient;
+
+        ctx.fillRect(
+            0,
+            0,
+            W,
+            H
+        );
+    }
+
+    ctx.save();
+
+    ctx.translate(
+        W/2,
+        H/2
+    );
+
+    ctx.scale(
+        cameraZoom,
+        cameraZoom
+    );
+
+    ctx.translate(
+        -W/2-cameraX,
+        -H/2-cameraY
+    );
+
+
+    /* Platforms */
+
+    for(
+        const platform of
+        platforms
+    ){
+
+        drawAsset(
+            "platform",
+            platform.x,
+            platform.y,
+            platform.w,
+            platform.h,
+            ()=>{
+
+                ctx.fillStyle="#555";
+
+                ctx.fillRect(
+                    platform.x,
+                    platform.y,
+                    platform.w,
+                    platform.h
+                );
+
+                ctx.fillStyle="#888";
+
+                ctx.fillRect(
+                    platform.x,
+                    platform.y,
+                    platform.w,
+                    5
+                );
+            }
+        );
+    }
+
+
+    /* Players */
+
+    players.forEach(
+        (player,index)=>{
+
+            if(!player.alive)
+                return;
+
+            const base=
+                index===0
+                ?"player1"
+                :"player2";
+
+            const jump=
+                index===0
+                ?"player1Jump"
+                :"player2Jump";
+
+            const run=
+                index===0
+                ?"player1Run"
+                :"player2Run";
+
+            let asset=base;
+
+            if(!player.grounded){
+
+                asset=
+                    player.jumps===2
+                    ?(
+                        index===0
+                        ?"player1DoubleJump"
+                        :"player2DoubleJump"
+                    )
+                    :jump;
+
+            }else if(
+                Math.abs(
+                    player.vx
+                )>.4
+            ){
+
+                asset=run;
+            }
+
+            drawAsset(
+                asset,
+                player.x,
+                player.y,
+                player.w,
+                player.h,
+                ()=>{
+
+                    ctx.fillStyle=
+                        player.color;
+
+                    ctx.fillRect(
+                        player.x,
+                        player.y,
+                        player.w,
+                        player.h
+                    );
+
+                    ctx.fillStyle="#fff";
+
+                    ctx.fillRect(
+                        player.x+7,
+                        player.y+9,
+                        6,
+                        6
+                    );
+
+                    ctx.fillRect(
+                        player.x+20,
+                        player.y+9,
+                        6,
+                        6
+                    );
+                }
+            );
+
+            ctx.fillStyle=
+                index===0
+                ?"rgba(53,167,255,.8)"
+                :"rgba(255,59,59,.8)";
+
+            ctx.font=
+                "bold 12px Arial";
+
+            ctx.textAlign="center";
+
+            ctx.fillText(
+                index===0
+                ?"P1"
+                :"P2",
+                player.x+
+                player.w/2,
+                player.y-8
+            );
+
+            ctx.textAlign="left";
+
+
+            /* Push effect */
+
+            if(
+                player.pushEffectTimer>0
+            ){
+
+                const progress=
+                    1-
+                    player.pushEffectTimer/
+                    18;
+
+                const radius=
+                    30+
+                    progress*
+                    PUSH_RANGE;
+
+                if(
+                    ASSETS.pushEffect.hasImage &&
+                    images.pushEffect &&
+                    images.pushEffect.complete
+                ){
+
+                    ctx.globalAlpha=
+                        Math.max(
+                            0,
+                            1-progress
+                        );
+
+                    ctx.drawImage(
+                        images.pushEffect,
+                        player.x+
+                        player.w/2-radius,
+                        player.y+
+                        player.h/2-radius,
+                        radius*2,
+                        radius*2
+                    );
+
+                    ctx.globalAlpha=1;
+
+                }else{
+
+                    ctx.strokeStyle=
+                        "rgba(255,255,255,.65)";
+
+                    ctx.lineWidth=4;
+
+                    ctx.beginPath();
+
+                    ctx.arc(
+                        player.x+
+                        player.w/2,
+                        player.y+
+                        player.h/2,
+                        radius,
+                        0,
+                        Math.PI*2
+                    );
+
+                    ctx.stroke();
+                }
+            }
+        }
+    );
+
+
+    /* Lava */
+
+    if(
+        ASSETS.lava.hasImage &&
+        images.lava &&
+        images.lava.complete
+    ){
+
+        ctx.drawImage(
+            images.lava,
+            -cameraX-1000,
+            lavaY,
+            W/cameraZoom+2000,
+            H+1000
+        );
+
+    }else{
+
+        const lavaGradient=
+            ctx.createLinearGradient(
+                0,
+                lavaY,
+                0,
+                H
+            );
+
+        lavaGradient.addColorStop(
+            0,
+            "#ff8a00"
+        );
+
+        lavaGradient.addColorStop(
+            .2,
+            "#ff3b00"
+        );
+
+        lavaGradient.addColorStop(
+            1,
+            "#700000"
+        );
+
+        ctx.fillStyle=
+            lavaGradient;
+
+        ctx.fillRect(
+            -cameraX-1000,
+            lavaY,
+            W/cameraZoom+2000,
+            H+1000
+        );
+    }
+
+
+    /* Lava surface */
+
+    if(
+        ASSETS.lavaSurface.hasImage &&
+        images.lavaSurface &&
+        images.lavaSurface.complete
+    ){
+
+        ctx.drawImage(
+            images.lavaSurface,
+            -cameraX-1000,
+            lavaY-15,
+            W/cameraZoom+2000,
+            35
+        );
+
+    }else{
+
+        ctx.fillStyle="#ffb000";
+
+        for(
+            let x=-1000;
+            x<W+1000;
+            x+=80
+        ){
+
+            const wave=
+                Math.sin(
+                    performance.now()*.003+
+                    x*.02
+                )*7;
+
+            ctx.beginPath();
+
+            ctx.arc(
+                x,
+                lavaY+wave,
+                42,
+                Math.PI,
+                0
+            );
+
+            ctx.fill();
+        }
+    }
+
+    ctx.restore();
+}
+
+
+/* =========================================================
+   UPDATE
+   ========================================================= */
+
+function update(){
+
+    if(!running)
+        return;
+
+    for(
+        const player of
+        players
+    ){
+
+        updatePlayer(player);
+    }
+
+
+    /* Jump detection */
+
+    for(
+        const player of
+        players
+    ){
+
+        const jump=
+            KEYBINDS[
+                player.bindPlayer
+            ].jump;
+
+        const pressed=
+            !!keys[jump];
+
+        if(
+            pressed &&
+            !player._jumpHeld
+        ){
+
+            tryJump(player);
+
+            player._jumpHeld=true;
+
+        }else if(!pressed){
+
+            player._jumpHeld=false;
+        }
+    }
+
+
+    /* Push */
+
+    if(mode==="pvp"){
+
+        for(
+            const player of
+            players
+        ){
+
+            const ability=
+                KEYBINDS[
+                    player.bindPlayer
+                ].ability;
+
+            if(
+                keys[ability] &&
+                !player.abilityHeld
+            ){
+
+                usePush(player);
+
+                player.abilityHeld=true;
+
+            }else if(
+                !keys[ability]
+            ){
+
+                player.abilityHeld=false;
+            }
+        }
+    }
+
+
+    updateCamera();
+    updateLava();
+
+
+    /* Lava collision */
+
+    for(
+        const player of
+        players
+    ){
+
+        if(
+            player.alive &&
+            player.y+
+            player.h>=
+            lavaY
+        ){
+
+            player.alive=false;
+        }
+    }
+
+
+    /* Solo */
+
+    if(mode==="solo"){
+
+        if(
+            !players[0].alive
+        ){
+
+            endGame(
+                "YOU DIED"
+            );
+
+            return;
+        }
+    }
+
+
+    /* Multiplayer */
+
+    if(
+        mode==="two" ||
+        mode==="pvp"
+    ){
+
+        const alive=
+            players.filter(
+                p=>p.alive
+            );
+
+        if(
+            alive.length===0
+        ){
+
+            endGame(
+                "BOTH PLAYERS LOST"
+            );
+
+            return;
+        }
+
+        if(
+            mode==="pvp" &&
+            alive.length===1
+        ){
+
+            endGame(
+                alive[0].bindPlayer==="p1"
+                ?"PLAYER 1 WINS!"
+                :"PLAYER 2 WINS!"
+            );
+
+            return;
+        }
+    }
+
+
+    const height=
+        Math.max(
+            0,
+            Math.floor(
+                (
+                    H-90-
+                    players[0].y
+                )/10
+            )
+        );
+
+    document.getElementById(
+        "heightText"
+    ).textContent=
+        height;
+
+    document.getElementById(
+        "lavaText"
+    ).textContent=
+        Math.max(
+            0,
+            Math.floor(
+                H-lavaY
+            )
+        );
+}
+
+
+/* =========================================================
+   LOOP
+   ========================================================= */
+
+function loop(){
+
+    update();
+    draw();
+
+    requestAnimationFrame(
+        loop
+    );
+}
+
+loop();
+
+
+/* =========================================================
+   GAME OVER
+   ========================================================= */
+
+function endGame(message){
+
+    if(!running)
+        return;
+
+    running=false;
+
+    stopMusic();
+
+    document.getElementById(
+        "gameOverTitle"
+    ).textContent=
+        message;
+
+    document.getElementById(
+        "winnerText"
+    ).textContent=
+        mode==="pvp"
+        ?message
+        :"";
+
+    document.getElementById(
+        "gameOver"
+    ).style.display=
+        "flex";
+}
+
+
+/* =========================================================
+   MENU
+   ========================================================= */
+
+function returnToMenu(){
+
+    running=false;
+
+    stopMusic();
+
+    players=[];
+    platforms=[];
+
+    document.getElementById(
+        "gameOver"
+    ).style.display=
+        "none";
+
+    document.getElementById(
+        "hud"
+    ).style.display=
+        "none";
+
+    document.getElementById(
+        "cameraText"
+    ).style.display=
+        "none";
+
+    document.getElementById(
+        "menu"
+    ).style.display=
+        "flex";
+}
+
+
+/* =========================================================
+   UNITY INTRO
+   ========================================================= */
+
+const unityIntro=
+    document.getElementById(
+        "unityIntro"
+    );
+
+const unityImage=
+    document.getElementById(
+        "unityImage"
+    );
+
+if(
+    ASSETS.unityIntro.hasImage
+){
+
+    unityImage.src=
+        ASSETS.unityIntro.image;
+}
+
+setTimeout(
+    ()=>{
+        unityIntro.style.display=
+            "none";
+    },
+    2700
+);
+
+
+/* =========================================================
+   INITIALIZE
+   ========================================================= */
+
+updateKeybindButtons();
+
+</script>
+
+</body>
+</html>
